@@ -4,8 +4,8 @@ services:
   front:
     image: qrcode2call-ng
     restart: unless-stopped
-    ports:
-      - ":8080"
+#    ports:
+#      - "127.0.0.1:8080:8080"
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -26,3 +26,6 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+
+networks:
+  qrcode2call:

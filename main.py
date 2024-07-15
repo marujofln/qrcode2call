@@ -94,24 +94,24 @@ async def handle_originate(origin: str, destination: str):
         )
 
 
-@ui.page("/", name="")
-def root():
-    ui.label("Bem-vindo ao Gnovit QRCode2Call")
-    ui.page_title("Gnovit QRCode2Call")
-    with ui.dropdown_button("Selecione o condomínio", auto_close=True):
-        for condo in condos.keys():
-            ui.item(condo, on_click=lambda: ui.navigate.to(f"/qrcode/{condo}"))
+# @ui.page("/", name="")
+# def root():
+#     ui.label("Bem-vindo ao Gnovit QRCode2Call")
+#     ui.page_title("Gnovit QRCode2Call")
+#     with ui.dropdown_button("Selecione o condomínio", auto_close=True):
+#         for condo in condos.keys():
+#             ui.item(condo, on_click=lambda: ui.navigate.to(f"/qrcode/{condo}"))
 
 
-@ui.page("/qrcode/{condo}")
-def show_qrcode(condo: str = None):
-    if condos.get(condo) is not None:
-        # app.url_path_for('static', path=f'{condo}.png')
-        with ui.card(align_items="center"):
-            ui.label("Escaneie o QRCode para realizar a chamada")
-            ui.image(f"/static/{condo}.png")
-    else:
-        ui.label("Condomínio não encontrado")
+# @ui.page("/qrcode/{condo}")
+# def show_qrcode(condo: str = None):
+#     if condos.get(condo) is not None:
+#         # app.url_path_for('static', path=f'{condo}.png')
+#         with ui.card(align_items="center"):
+#             ui.label("Escaneie o QRCode para realizar a chamada")
+#             ui.image(f"/static/{condo}.png")
+#     else:
+#         ui.label("Condomínio não encontrado")
 
 
 @ui.page("/call/{condo}")
