@@ -1,3 +1,13 @@
+backend_api = {
+    "base_url": "http://127.0.0.1:8000/",
+    "username": "dev",
+    "password": "CHANGE_ME",
+    "endpoints": {
+        "originate": "v1/originate",
+        "blocks_units_by_condo": "v1/condo/{condo_id}/blocks_units",
+    },
+}
+
 condos = {
     "gnovit": {
         "url": "https://api.example.com:8099",

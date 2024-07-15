@@ -1,6 +1,6 @@
 import requests
 from nicegui import ui, app, run
-from condos import condos
+from config import condos, backend_api
 
 app.add_static_files("/static", "static")
 
@@ -16,12 +16,23 @@ class Dialpad:
     def remove_number(self):
         self.destination = self.destination[:-1]
 
-    def setup_gui(self, call_card, unit: str):
+    def setup_dialpad_card(self, call_card: ui.card, origin: str):
+        """
+        Sets up the Dialpad Card
+
+        Args:
+            call_card(ui.card): The call card object.
+            origin (str): The origin of the call, an exten unit from condo
+
+        Returns:
+            None
+        """
         self.call_card = call_card
-        self.unit = unit
+        self.origin = origin
         self.call_card.clear()
 
         with self.call_card:
+            ui.label("Informe o seu telefone que ligaremos para você")
             ui.input().bind_value(self, "destination").props(
                 'outlined input-style="text-align:right"'
             ).tailwind("min-w-full")
@@ -30,7 +41,6 @@ class Dialpad:
                 ui.button("8", on_click=lambda: self.insert_number("8"))
                 ui.button("9", on_click=lambda: self.insert_number("9"))
                 # ////////////
-                # im not sure what is the purpose of this, it doesnt seem to change functionality in a normal calculator
                 ui.button("4", on_click=lambda: self.insert_number("4"))
                 ui.button("5", on_click=lambda: self.insert_number("5"))
                 ui.button("6", on_click=lambda: self.insert_number("6"))
@@ -41,10 +51,10 @@ class Dialpad:
                 # ////////////
                 ui.button("<-", on_click=lambda: self.remove_number())
                 ui.button("0", on_click=lambda: self.insert_number("0"))
-                ui.button("->", on_click=lambda: handle_originate())
+                ui.button("->", on_click=lambda: handle_originate(origin, self.destination))
 
 
-async def handle_originate(origin: str, destination: str, condo: str):
+async def handle_originate(origin: str, destination: str):
     CALL_TIMEOUT = 20
 
     n = ui.notification(
@@ -53,8 +63,9 @@ async def handle_originate(origin: str, destination: str, condo: str):
         type="ongoing",
         spinner=True,
     )
+    condo = 'gnovit'
 
-    url = f"{condos[condo]['url']}/v1/originate?origin={condos[condo]['origin']}&destination={condos[condo]['destination'][unit]}"
+    url = f"{condos[condo]['url']}/v1/originate?origin={origin}&destination={destination}"
     # url = 'https://httpbin.org/delay/1'
     response = await run.io_bound(
         requests.get,
@@ -76,7 +87,7 @@ async def handle_originate(origin: str, destination: str, condo: str):
     else:
         n.dismiss()
         ui.notify(
-            f"Erro {response.status_code} realizando chamada.",
+            f"Erro {response.status_code} ao realizar chamada.",
             position="center",
             type="negative",
             duration=5000,
@@ -105,27 +116,66 @@ def show_qrcode(condo: str = None):
 
 @ui.page("/call/{condo}")
 async def call(condo: str = None):
-    if condo is None or condos.get(condo) is None:
-        ui.label("Condomínio não encontrado")
+
+    # url = f"{backend_api}['url']['originate']?origin={condos[condo]['origin']}&destination={condos[condo]['destination'][unit]}"
+    # url = 'https://httpbin.org/delay/1'
+    # response = await run.io_bound(
+    #     requests.get,
+    #     url,
+    #     timeout=CALL_TIMEOUT,
+    #     auth=(condos[condo]["username"], condos[condo]["password"]),
+    #     verify=False,
+    # )
+
+    blocks_units = requests.get(
+        backend_api["base_url"]
+        + backend_api["endpoints"]["blocks_units_by_condo"].format(condo_id=condo),
+        auth=(backend_api["username"], backend_api["password"]),
+    )
+
+    if blocks_units.status_code != 200:
+        ui.label("Erro ao buscar unidades do condomínio.")
         return
+
+    # if blocks_units.json() == {}:  # empty dict
+    #     ui.label("Nenhuma unidade encontrada.")
+    #     return
+
     d = Dialpad(condo)
     call_card = ui.card(align_items="stretch")
     with call_card:
-        ui.label("Selecione o destino para chamar:")
+        ui.label("Selecione a unidade de destino para chamar:")
         with ui.grid():
-            for unit, destination in condos[condo]["destination"].items():
-                ui.button(f"{unit}", on_click=lambda: d.setup_gui(call_card, unit))
+            for block in blocks_units.json():
+                ui.label(f"Bloco: {block}")
+                for unit in blocks_units.json()[block]:
+                    exten = blocks_units.json()[block][unit]
+                    if exten is None:
+                        # TODO: implementar log
+                        print(f"Unidade {unit} sem extensão configurada")
+                        continue
+                    ui.button(f"{unit}", on_click=lambda: d.setup_dialpad_card(call_card, blocks_units.json()[block][unit]))
         # ui.button("Chamar", on_click=handle_originate)
     # handle_originate(condo, unit)
 
 
 def handle_dialpad(call_card: ui.card, condo: str, unit: str):
-    d = Dialpad(origin=condos[condo]["origin"], destination=condos[condo]["destination"][unit])
-    d.setup_gui(call_card)
+    d = Dialpad(
+        origin=condos[condo]["origin"], destination=condos[condo]["destination"][unit]
+    )
+    d.setup_dialpad_card(call_card)
 
-@ui.page("/dialpad")
-async def dialpad():
-    d = Dialpad()
+
+@ui.page("/dest")
+async def dialpad(condo: str = "gnovit", unit: str = None):
+    call_card = ui.card(align_items="stretch")
+    with call_card:
+        ui.label("Selecione o destino para chamar:")
+        with ui.grid():
+            for unit, destination in condos[condo]['destination'].items():
+                ui.button(
+                    f"{unit}", on_click=lambda: handle_dialpad(call_card, condo, unit)
+                )
 
 
 ui.run(
@@ -133,6 +183,6 @@ ui.run(
     dark=None,
     language="pt-BR",
     on_air=False,
-    port=8000,
+    port=8080,
     reload=False,
 )
