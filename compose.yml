@@ -1,11 +1,11 @@
 # version: '3.4'
 
 services:
-  qrcode2call-ng:
+  front:
     image: qrcode2call-ng
     restart: unless-stopped
     ports:
-      - "8080:8080"
+      - ":8080"
     build:
       context: .
       dockerfile: ./Dockerfile
@@ -16,8 +16,9 @@ services:
     ports:
       - "80:80"
       - "443:443"
+      - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
+      - /etc/qrcode2call/Caddyfile:/etc/caddy/Caddyfile
       - ./site:/srv
       - caddy_data:/data
       - caddy_config:/config
