@@ -1,6 +1,6 @@
 import requests
 from nicegui import ui, app, run
-from config import condos, backend_api
+from config.settings import backend_api, condos
 
 app.add_static_files("/static", "static")
 

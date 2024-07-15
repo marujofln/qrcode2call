@@ -1,4 +1,4 @@
-from config import condos
+from config.settings import condos
 import qrcode
 
 QR2CALL_URL = "https://south-america.on-air.io/devices/DEVICE_ID/call"

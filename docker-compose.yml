@@ -9,6 +9,8 @@ services:
     build:
       context: .
       dockerfile: ./Dockerfile
+    volumes:
+      - /etc/qrcode2call/:/opt/qrcode2call/config/
 
   caddy:
     image: caddy:latest
@@ -18,7 +20,7 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - /etc/qrcode2call/Caddyfile:/etc/caddy/Caddyfile
+      - /etc/qrcode2call/:/etc/caddy/
       - ./site:/srv
       - caddy_data:/data
       - caddy_config:/config
