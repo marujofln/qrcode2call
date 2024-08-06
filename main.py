@@ -37,17 +37,17 @@ class Dialpad:
                 'outlined input-style="text-align:right"'
             ).tailwind("min-w-full")
             with ui.grid(columns=3):
-                ui.button("7", on_click=lambda: self.insert_number("7"))
-                ui.button("8", on_click=lambda: self.insert_number("8"))
-                ui.button("9", on_click=lambda: self.insert_number("9"))
+                ui.button("1", on_click=lambda: self.insert_number("1"))
+                ui.button("2", on_click=lambda: self.insert_number("2"))
+                ui.button("3", on_click=lambda: self.insert_number("3"))
                 # ////////////
                 ui.button("4", on_click=lambda: self.insert_number("4"))
                 ui.button("5", on_click=lambda: self.insert_number("5"))
                 ui.button("6", on_click=lambda: self.insert_number("6"))
                 # ////////////
-                ui.button("1", on_click=lambda: self.insert_number("1"))
-                ui.button("2", on_click=lambda: self.insert_number("2"))
-                ui.button("3", on_click=lambda: self.insert_number("3"))
+                ui.button("7", on_click=lambda: self.insert_number("7"))
+                ui.button("8", on_click=lambda: self.insert_number("8"))
+                ui.button("9", on_click=lambda: self.insert_number("9"))
                 # ////////////
                 ui.button("<-", on_click=lambda: self.remove_number())
                 ui.button("0", on_click=lambda: self.insert_number("0"))
