@@ -2,3 +2,5 @@
 *.swp
 *.pyc
 .etc/
+# QR codes gerados por create-qrcodes.py
+static/*.png
