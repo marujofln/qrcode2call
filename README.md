@@ -20,7 +20,7 @@ The backend API (FreeSWITCH connector) is a separate service and is not part of 
 | `/` | Condominium selector |
 | `/qrcode/{condo}` | Shows the QR code for a condominium |
 | `/call/{condo_id}` | Unit selection + dialpad (QR code target) |
-| `/dest` | Static destination list from `config/settings.py` (testing) |
+| `/dest` | Static destination list from `config/settings.py` (testing). Calls from the condo's `origin` to the selected number |
 
 ## Configuration
 
@@ -81,5 +81,5 @@ python main.py             # http://localhost:8080
 ## Notes
 
 - Generated QR codes (`static/*.png`) are git-ignored. Run `create-qrcodes.py` after changing `condos` or `qrcode2call_url`.
-- `handle_originate` currently uses the `gnovit` entry of `condos` for the originate credentials. Adjust it if you have several entries.
+- `/call/<condo_id>` uses the `condos` entry with that `condo_id` for the originate URL and credentials, so every condominium served needs an entry in `condos`.
 - Anyone with the QR code can trigger calls to the units. Consider rate limiting at the reverse proxy.

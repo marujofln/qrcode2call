@@ -51,10 +51,13 @@ class Dialpad:
                 # ////////////
                 ui.button("<-", on_click=lambda: self.remove_number())
                 ui.button("0", on_click=lambda: self.insert_number("0"))
-                ui.button("->", on_click=lambda: handle_originate(origin, self.destination))
+                ui.button(
+                    "->",
+                    on_click=lambda: handle_originate(self.condo, origin, self.destination),
+                )
 
 
-async def handle_originate(origin: str, destination: str):
+async def handle_originate(condo: dict, origin: str, destination: str):
     CALL_TIMEOUT = 20
 
     n = ui.notification(
@@ -63,15 +66,13 @@ async def handle_originate(origin: str, destination: str):
         type="ongoing",
         spinner=True,
     )
-    condo = 'gnovit'
-
-    url = f"{condos[condo]['url']}/v1/originate?origin={origin}&destination={destination}"
+    url = f"{condo['url']}/v1/originate?origin={origin}&destination={destination}"
     # url = 'https://httpbin.org/delay/1'
     response = await run.io_bound(
         requests.get,
         url,
         timeout=CALL_TIMEOUT,
-        auth=(condos[condo]["username"], condos[condo]["password"]),
+        auth=(condo["username"], condo["password"]),
         verify=False,
     )
 
@@ -100,7 +101,7 @@ def root():
     ui.page_title("Gnovit QRCode2Call")
     with ui.dropdown_button("Selecione o condomínio", auto_close=True):
         for condo in condos.keys():
-            ui.item(condo, on_click=lambda: ui.navigate.to(f"/qrcode/{condo}"))
+            ui.item(condo, on_click=lambda c=condo: ui.navigate.to(f"/qrcode/{c}"))
 
 
 @ui.page("/qrcode/{condo}")
@@ -116,20 +117,19 @@ def show_qrcode(condo: str = None):
 
 @ui.page("/call/{condo}")
 async def call(condo: str = None):
+    # the QR code points to /call/<condo_id>, not to the key of `condos`
+    condo_settings = next(
+        (c for c in condos.values() if c["condo_id"] == condo), None
+    )
+    if condo_settings is None:
+        ui.label("Condomínio não encontrado")
+        return
 
-    # url = f"{backend_api}['url']['originate']?origin={condos[condo]['origin']}&destination={condos[condo]['destination'][unit]}"
-    # url = 'https://httpbin.org/delay/1'
-    # response = await run.io_bound(
-    #     requests.get,
-    #     url,
-    #     timeout=CALL_TIMEOUT,
-    #     auth=(condos[condo]["username"], condos[condo]["password"]),
-    #     verify=False,
-    # )
     requests_opts = {}
     if backend_api["ignore-ssl-certificate-check"]:
         requests_opts = {'verify': False}
-    blocks_units = requests.get(
+    blocks_units = await run.io_bound(
+        requests.get,
         backend_api["base_url"]
         + backend_api["endpoints"]["blocks_units_by_condo"].format(condo_id=condo),
         auth=(backend_api["username"], backend_api["password"]),
@@ -140,33 +140,28 @@ async def call(condo: str = None):
         ui.label("Erro ao buscar unidades do condomínio.")
         return
 
-    # if blocks_units.json() == {}:  # empty dict
-    #     ui.label("Nenhuma unidade encontrada.")
-    #     return
-
-    d = Dialpad(condo)
+    d = Dialpad(condo_settings)
     call_card = ui.card(align_items="stretch")
     with call_card:
         ui.label("Selecione a unidade de destino para chamar:")
         with ui.grid():
-            for block in blocks_units.json():
+            for block, units in blocks_units.json().items():
                 ui.label(f"Bloco: {block}")
-                for unit in blocks_units.json()[block]:
-                    exten = blocks_units.json()[block][unit]
+                for unit, exten in units.items():
                     if exten is None:
                         # TODO: implementar log
                         print(f"Unidade {unit} sem extensão configurada")
                         continue
-                    ui.button(f"{unit}", on_click=lambda: d.setup_dialpad_card(call_card, blocks_units.json()[block][unit]))
-        # ui.button("Chamar", on_click=handle_originate)
-    # handle_originate(condo, unit)
+                    ui.button(
+                        f"{unit}",
+                        on_click=lambda e=exten: d.setup_dialpad_card(call_card, e),
+                    )
 
 
 def handle_dialpad(call_card: ui.card, condo: str, unit: str):
-    d = Dialpad(
-        origin=condos[condo]["origin"], destination=condos[condo]["destination"][unit]
-    )
-    d.setup_dialpad_card(call_card)
+    d = Dialpad(condos[condo])
+    d.destination = condos[condo]["destination"][unit]
+    d.setup_dialpad_card(call_card, condos[condo]["origin"])
 
 
 @ui.page("/dest")
@@ -175,17 +170,19 @@ async def dialpad(condo: str = "gnovit", unit: str = None):
     with call_card:
         ui.label("Selecione o destino para chamar:")
         with ui.grid():
-            for unit, destination in condos[condo]['destination'].items():
+            for unit in condos[condo]['destination']:
                 ui.button(
-                    f"{unit}", on_click=lambda: handle_dialpad(call_card, condo, unit)
+                    f"{unit}",
+                    on_click=lambda u=unit: handle_dialpad(call_card, condo, u),
                 )
 
 
-ui.run(
-    title="Gnovit QRCode2Call",
-    dark=None,
-    language="pt-BR",
-    on_air=False,
-    port=8080,
-    reload=False,
-)
+if __name__ in {"__main__", "__mp_main__"}:
+    ui.run(
+        title="Gnovit QRCode2Call",
+        dark=None,
+        language="pt-BR",
+        on_air=False,
+        port=8080,
+        reload=False,
+    )
