@@ -59,6 +59,8 @@ In production the compose file mounts `/etc/qrcode2call/` over `config/`, so the
 ### Docker Compose (with Caddy for TLS)
 
 ```bash
+git clone https://github.com/marujofln/qrcode2call.git
+cd qrcode2call
 sudo mkdir -p /etc/qrcode2call
 sudo cp config/settings.py /etc/qrcode2call/settings.py      # then edit it
 sudo cp config/Caddyfile.sample /etc/qrcode2call/Caddyfile   # set your hostname
